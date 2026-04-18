@@ -2,25 +2,25 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // 简易 mock 鉴权逻辑：实际情况应该从 cookie 中取出 JWT 并校验
-  const role = request.cookies.get('mock_role')?.value; // 'admin' 或 'user'
-  const isLoggedIn = request.cookies.has('mock_token');
+  // 只判断是否存在基础 token（代表登录状态）。不在这里做角色判断。
+  const token = request.cookies.get('mock_token')?.value;
 
   const { pathname } = request.nextUrl;
 
-  // 1. 保护管理员路由
-  if (pathname.startsWith('/admin')) {
-    if (role !== 'admin') {
-      // 未登录或非管理员，重定向到登录页，并携带回跳参数
+  // 1. 对于必须登录才能进入的普通页面 /publish
+  if (pathname.startsWith('/publish')) {
+    if (!token) {
       const url = new URL('/login', request.url);
       url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
     }
   }
 
-  // 2. 保护发布等需要登录的普通路由
-  if (pathname.startsWith('/publish')) {
-    if (!isLoggedIn) {
+  // 2. 保护 /admin 本身：只拦截是否有 Token（未登录当然不能进 Admin）
+  // 至于角色是不是Admin，将由进入/admin后发起的数据接口API请求去接受后端的鉴定(403无权限或200获取成功)。
+  // 前端不对角色做自作主张的鉴定限制。
+  if (pathname.startsWith('/admin')) {
+    if (!token) {
       const url = new URL('/login', request.url);
       url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
@@ -31,5 +31,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/publish/:path*'],
+  matcher: ['/admin/:path*', '/admin', '/publish/:path*', '/publish'],
 };

@@ -22,11 +22,24 @@
 ### 2.1 登录获取 Token
 - **POST** `/auth/login`
 - **请求体**: 
-  - `phone` (string, 必填)
+  - `phone` (string, 必填) 或 `username` (string, 必填)
   - `password_hash` (string, 必填) - 前端传输加密哈希
 - **响应数据**:
-  - `token` (string)
-  - `user`: 登录人基础实体
+  ```json
+  {
+    "code": 200,
+    "data": {
+      "token": "jwt_token_string",
+      "user": {
+        "id": 1,
+        "phone": "13800000000",
+        "role": 1, // 0为普通用户，1为系统管理员
+        "nickname": "Cloud Admin"
+      }
+    }
+  }
+  ```
+  *说明：前端将严格依赖返回的 `user.role` 字段来隐式决定是否挂载或开启管理控制台入口。普通用户登录仅返回 `role: 0`。*
 
 ### 2.2 获取当前信息
 - **GET** `/auth/me`

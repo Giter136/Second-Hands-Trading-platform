@@ -1,0 +1,96 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParams = searchParams.get('redirect');
+
+  const [loading, setLoading] = useState(false);
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // 严正声明：登录逻辑的鉴定移交后端
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account || !password) {
+      setErrorMsg('请输入账号和密码');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+    
+    // 我们在此不进行任何账号硬编码，将来直接换成：
+    // const res = await http.post('/auth/login', { account, password_hash });
+    setTimeout(() => {
+      // 在这里仅模拟后端颁发了 token
+      document.cookie = `mock_token=fake_jwt_token; path=/; max-age=86400`;
+
+      if (redirectParams) {
+        router.push(redirectParams);
+      } else {
+        router.push('/');
+      }
+      
+      router.refresh(); 
+    }, 800);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center -mt-20 px-4 animate-fade-up w-full">
+      <div className="glass-panel p-8 md:p-12 rounded-[2rem] max-w-md w-full shadow-2xl relative overflow-hidden">
+        {/* 背景光晕装饰 */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#4361EE]/20 to-transparent rounded-bl-full pointer-events-none" />
+        
+        <div className="mb-10 text-center relative z-10">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-3">登录云端</h1>
+          <p className="text-slate-500 font-medium text-sm">欢迎开启你的极简交易之旅</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-5 relative z-10 w-full">
+          <div className="w-full">
+            <label className="block text-xs font-bold text-slate-500 mb-2">手机号/账号</label>
+            <input 
+              type="text"
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              placeholder="输入账号"
+              className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#4361EE]/50 transition-all font-medium placeholder:text-slate-400 outline-none"
+            />
+          </div>
+          
+          <div className="w-full">
+            <label className="block text-xs font-bold text-slate-500 mb-2">密码</label>
+            <input 
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="输入密码"
+              className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#4361EE]/50 transition-all font-medium placeholder:text-slate-400 outline-none"
+            />
+          </div>
+
+          {errorMsg && (
+            <p className="text-rose-500 text-xs font-bold text-center animate-pulse">{errorMsg}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="group relative w-full flex justify-center py-4 px-6 mt-2 border border-transparent text-sm font-bold rounded-2xl text-white bg-slate-900 hover:bg-[#4361EE] focus:outline-none transition-all shadow-lg hover:shadow-[0_8px_20px_rgba(67,97,238,0.3)] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {loading ? '正在通信...' : '立即登录 / 注册'}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center text-xs text-slate-400 font-medium relative z-10">
+          点击登录即表示您同意我们的 <a href="#" className="underline hover:text-slate-900">服务条款</a>
+        </div>
+      </div>
+    </div>
+  );
+}
