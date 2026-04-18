@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-blue: #4361EE;
+  --color-brand-mint: #10B981;
+  --color-text-main: #0F172A;
+  --color-text-muted: #64748B;
+  
+  /* 自定义动画 */
+  --animate-fade-up: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-float: floating 6s ease-in-out infinite;
+
+  @keyframes fadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes floating {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+}
+
+/* 基础重置与层叠上下文 */
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-[#FDFDFD] to-[#F1F5F9] text-slate-900 min-h-screen selection:bg-[#4361EE] selection:text-white antialiased;
+    /* 加入微妙的网格纹理作为云端背景的深度补充 */
+    background-image: 
+      linear-gradient(to bottom right, #FDFDFD, #F1F5F9),
+      radial-gradient(at 0% 0%, rgba(67, 97, 238, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* 全局实用 Glassmorphism 类，体现 "云端浮岛" */
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+  }
+  
+  .glass-card {
+    @apply bg-white/50 backdrop-blur-lg border border-white/40 shadow-sm hover:shadow-2xl hover:bg-white/80 transition-all duration-500 ease-out;
+  }
+
+  /* 延迟动画类，用于交错进场 */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+}

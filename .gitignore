@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Frontend Build
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+.next/
+dist/
+build/
+
+# Backend Build & Virtual Env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+*.crt
+
+# Runtime & Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Editor & System
+.vscode/*
+!.vscode/settings.json
+*.swp
+.DS_Store
+Thumbs.db
