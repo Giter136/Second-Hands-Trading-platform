@@ -27,25 +27,29 @@ export async function http<T>(endpoint: string, options: RequestOptions = {}): P
     });
   }
 
-  // 2. 处理 Token (可从 cookie/localStorage 中获取)
-  let authHeader = {};
+  // 2. 处理 Token 与 Headers 初始化
+  const mergedHeaders = new Headers(headers);
+  
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('access_token');
     if (token) {
-      authHeader = { Authorization: `Bearer ${token}` };
+      mergedHeaders.set('Authorization', `Bearer ${token}`);
     }
   }
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...authHeader,
-    ...headers,
-  };
+  // 3. 处理 Content-Type
+  // 如果没有显式设置 Content-Type，且 body 不是 FormData，默认用 application/json
+  if (!mergedHeaders.has('Content-Type') && !(customOptions.body instanceof FormData)) {
+    mergedHeaders.set('Content-Type', 'application/json');
+  } else if (customOptions.body instanceof FormData) {
+    // 如果是 FormData，绝对不能手动设置 Content-Type，必须让浏览器自己加上 boundary
+    mergedHeaders.delete('Content-Type');
+  }
 
   try {
     const response = await fetch(url.toString(), {
       ...customOptions,
-      headers: defaultHeaders,
+      headers: mergedHeaders,
     });
 
     if (!response.ok) {

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Optional
 
 from pydantic import AliasChoices, Field, model_validator
 
@@ -6,8 +9,8 @@ from app.schemas.base import CamelModel
 
 
 class AuthLoginRequest(CamelModel):
-    phone: str | None = None
-    username: str | None = None
+    phone: Optional[str] = None
+    username: Optional[str] = None
     password_hash: str = Field(validation_alias=AliasChoices("password_hash", "passwordHash"))
 
     @model_validator(mode="after")
@@ -27,10 +30,10 @@ class UserDTO(CamelModel):
     id: int
     phone: str
     nickname: str
-    avatar_url: str | None = None
+    avatar_url: Optional[str] = None
     role: int
     status: int
-    created_at: datetime | None = None
+    created_at: Optional[datetime] = None
 
 
 class AuthLoginData(CamelModel):

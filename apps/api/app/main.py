@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import get_settings
@@ -8,6 +11,7 @@ from app.core.handlers import register_exception_handlers
 from app.core.response import success_response
 
 settings = get_settings()
+Path("uploads/images").mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
@@ -22,6 +26,7 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.on_event("startup")

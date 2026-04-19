@@ -52,3 +52,12 @@ class ConflictException(AppException):
             message=message,
             status_code=409,
         )
+
+
+class UnsupportedMediaTypeException(AppException):
+    def __init__(self, message: str = "unsupported media type") -> None:
+        super().__init__(
+            code=error_codes.UNSUPPORTED_MEDIA_TYPE,
+            message=message,
+            status_code=415,
+        )
