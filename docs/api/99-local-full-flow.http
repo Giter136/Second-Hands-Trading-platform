@@ -1,0 +1,176 @@
+### Local API full flow smoke file
+### Use VS Code REST Client extension to run requests in order.
+### Important: auth endpoints require passwordHash, not password.
+
+@baseUrl = http://127.0.0.1:8000/api/v1
+@phoneSeller = 13900000011
+@phoneBuyer = 13800000011
+@phoneAdmin = 13700000011
+@passwordHash = 123456
+
+### 1) register seller
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "phone": "{{phoneSeller}}",
+  "passwordHash": "{{passwordHash}}",
+  "nickname": "seller-demo"
+}
+
+### 2) register buyer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "phone": "{{phoneBuyer}}",
+  "passwordHash": "{{passwordHash}}",
+  "nickname": "buyer-demo"
+}
+
+### 3) register admin account (then set role=1 in db manually)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "phone": "{{phoneAdmin}}",
+  "passwordHash": "{{passwordHash}}",
+  "nickname": "admin-demo"
+}
+
+### 4) login seller
+# @name loginSeller
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "phone": "{{phoneSeller}}",
+  "passwordHash": "{{passwordHash}}"
+}
+
+@tokenSeller = {{loginSeller.response.body.data.token}}
+
+### 5) login buyer
+# @name loginBuyer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "phone": "{{phoneBuyer}}",
+  "passwordHash": "{{passwordHash}}"
+}
+
+@tokenBuyer = {{loginBuyer.response.body.data.token}}
+@buyerId = {{loginBuyer.response.body.data.user.id}}
+
+### 6) login admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "phone": "{{phoneAdmin}}",
+  "passwordHash": "{{passwordHash}}"
+}
+
+@tokenAdmin = {{loginAdmin.response.body.data.token}}
+
+### 7) seller publish item
+# @name publishItem
+POST {{baseUrl}}/items
+Content-Type: application/json
+Authorization: Bearer {{tokenSeller}}
+
+{
+  "title": "Nintendo Switch v2",
+  "category": "digital",
+  "conditionLevel": 4,
+  "price": 1500,
+  "description": "Great condition and all accessories included",
+  "city": "Shanghai",
+  "imageUrls": ["/uploads/images/demo-1.jpg"]
+}
+
+@itemId = {{publishItem.response.body.data.id}}
+
+### 8) admin audit pass item
+POST {{baseUrl}}/admin/items/{{itemId}}/audit
+Content-Type: application/json
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "result": 1
+}
+
+### 9) buyer create conversation
+# @name createConversation
+POST {{baseUrl}}/conversations
+Content-Type: application/json
+Authorization: Bearer {{tokenBuyer}}
+
+{
+  "itemId": {{itemId}}
+}
+
+@conversationId = {{createConversation.response.body.data.id}}
+
+### 10) buyer send message
+POST {{baseUrl}}/conversations/{{conversationId}}/messages
+Content-Type: application/json
+Authorization: Bearer {{tokenBuyer}}
+
+{
+  "content": "Can we meet near metro station?"
+}
+
+### 11) seller reply message
+POST {{baseUrl}}/conversations/{{conversationId}}/messages
+Content-Type: application/json
+Authorization: Bearer {{tokenSeller}}
+
+{
+  "content": "Sure, tomorrow evening works."
+}
+
+### 12) buyer create trade
+# @name createTrade
+POST {{baseUrl}}/trades
+Content-Type: application/json
+Authorization: Bearer {{tokenBuyer}}
+
+{
+  "itemId": {{itemId}},
+  "conversationId": {{conversationId}},
+  "agreedPrice": 1450,
+  "meetupLocation": "Metro Line 2 Exit A"
+}
+
+@tradeId = {{createTrade.response.body.data.id}}
+
+### 13) seller confirm trade (required before complete)
+POST {{baseUrl}}/trades/{{tradeId}}/confirm
+Content-Type: application/json
+Authorization: Bearer {{tokenSeller}}
+
+### 14) buyer complete trade
+POST {{baseUrl}}/trades/{{tradeId}}/complete
+Content-Type: application/json
+Authorization: Bearer {{tokenBuyer}}
+
+### 15) seller complete trade (second confirm to close)
+POST {{baseUrl}}/trades/{{tradeId}}/complete
+Content-Type: application/json
+Authorization: Bearer {{tokenSeller}}
+
+### 16) admin list trades
+GET {{baseUrl}}/admin/trades?page=1&size=20
+Authorization: Bearer {{tokenAdmin}}
+
+### 17) admin freeze buyer account
+POST {{baseUrl}}/admin/users/{{buyerId}}/freeze
+Content-Type: application/json
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "reason": "Violation of platform policy"
+}

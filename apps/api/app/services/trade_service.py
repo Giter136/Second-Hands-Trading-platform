@@ -53,7 +53,7 @@ class TradeService:
             raise NotFoundException("trade not found")
         if current_user.id != trade.seller_id:
             raise ForbiddenException("only seller can confirm trade")
-        if trade.status not in (0, 1):
+        if trade.status != 1:
             raise ConflictException("trade status is not confirmable")
 
         trade = await self.trade_repository.update_trade(trade=trade, status=2)
@@ -90,8 +90,8 @@ class TradeService:
             raise NotFoundException("trade not found")
         if current_user.id not in (trade.buyer_id, trade.seller_id):
             raise ForbiddenException("no permission to complete trade")
-        if trade.status not in (0, 1, 2):
-            raise ConflictException("trade status is not completable")
+        if trade.status != 2:
+            raise ConflictException("trade must be confirmed before complete")
 
         now = datetime.now(timezone.utc)
         update_kwargs = {"status": 2}

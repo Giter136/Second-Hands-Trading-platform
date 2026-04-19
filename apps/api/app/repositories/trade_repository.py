@@ -52,7 +52,7 @@ class TradeRepository:
             conversation_id=conversation_id,
             agreed_price=Decimal(str(agreed_price)),
             meetup_location=meetup_location,
-            status=0,
+            status=1,
         )
         self.session.add(trade)
         await self.session.flush()

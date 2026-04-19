@@ -25,3 +25,15 @@ class ItemAuditDTO(CamelModel):
     admin_id: int
     result: int
     reason: Optional[str] = None
+
+
+class FreezeUserRequest(CamelModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2 or len(value) > 200:
+            raise ValueError("reason length must be 2-200")
+        return value

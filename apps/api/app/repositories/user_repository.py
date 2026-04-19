@@ -32,3 +32,9 @@ class UserRepository:
         await self.session.flush()
         await self.session.refresh(user)
         return user
+
+    async def freeze_user(self, user: User) -> User:
+        user.status = 0
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user

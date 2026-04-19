@@ -7,11 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session, get_tx_session
 from app.core.dependencies import get_current_admin
+from app.core.exceptions import ConflictException, NotFoundException
 from app.core.response import success_response
 from app.models.user import User
 from app.repositories.item_repository import ItemRepository
 from app.repositories.trade_repository import TradeRepository
-from app.schemas.admin import ItemAuditDTO, ItemAuditRequest
+from app.repositories.user_repository import UserRepository
+from app.schemas.admin import FreezeUserRequest, ItemAuditDTO, ItemAuditRequest
 from app.schemas.item import AdminItemListData
 from app.services.item_service import ItemService
 from app.services.trade_service import TradeService
@@ -59,3 +61,25 @@ async def get_admin_trades(
     trades, total = await service.list_admin_trades(status=status, page=page, size=size)
     data = TradeListData(trades=trades, total=total)
     return success_response(data=data.model_dump(by_alias=True))
+
+
+@router.post("/users/{user_id}/freeze")
+async def freeze_user(
+    user_id: int,
+    payload: FreezeUserRequest,
+    admin_user: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_tx_session),
+):
+    user_repository = UserRepository(session)
+    user = await user_repository.get_by_id(user_id)
+    if user is None:
+        raise NotFoundException("user not found")
+    if user.role == 1:
+        raise ConflictException("cannot freeze admin")
+    if user.id == admin_user.id:
+        raise ConflictException("cannot freeze yourself")
+
+    # Reason is validated in request schema and reserved for future audit logging.
+    _ = payload.reason
+    await user_repository.freeze_user(user)
+    return success_response(data=None)
