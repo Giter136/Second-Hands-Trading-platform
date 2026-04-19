@@ -1,0 +1,8 @@
+fastapi==0.116.1
+uvicorn==0.34.0
+pydantic==2.11.1
+pydantic-settings==2.8.1
+SQLAlchemy==2.0.36
+asyncmy==0.2.10
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4

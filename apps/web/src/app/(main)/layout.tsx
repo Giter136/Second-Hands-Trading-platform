@@ -9,7 +9,7 @@ export default async function MainLayout({
 }>) {
   // 只用于用户界面的状态感知（非实际权限控制）
   const cookieStore = await cookies();
-  const token = cookieStore.get('mock_token')?.value; 
+  const token = cookieStore.get('access_token')?.value; 
 
   return (
     <>

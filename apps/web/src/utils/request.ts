@@ -3,7 +3,8 @@
  * 处理全局 baseURL, 请求拦截（Token 添加），响应拦截（错误统一处理）
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// 修复点 1: 修正请求基准地址前缀，遵循 API 文档定义的 /api/v1
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, any>;
@@ -12,8 +13,12 @@ interface RequestOptions extends RequestInit {
 export async function http<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, headers, ...customOptions } = options;
   
-  // 1. 处理请求查询参数 (Query strings)
-  const url = new URL(endpoint, BASE_URL);
+  // 1. 处理请求查询参数，严格构建完整 URL
+  // 修复点 2: 预防 endpoint 被识别为根路径 (如: /admin/items 冲掉 /api/v1)
+  const safeEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const baseUrlWithSlash = BASE_URL.endsWith('/') ? BASE_URL : `${BASE_URL}/`;
+  const url = new URL(safeEndpoint, baseUrlWithSlash);
+  
   if (params) {
     Object.keys(params).forEach(key => {
       if (params[key] !== undefined) {

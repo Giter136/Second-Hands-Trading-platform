@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { http } from '../../../utils/request';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,8 +14,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // 严正声明：登录逻辑的鉴定移交后端
-  const handleLogin = (e: React.FormEvent) => {
+  // 严正声明：登录逻辑已对接真实后端
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!account || !password) {
       setErrorMsg('请输入账号和密码');
@@ -24,20 +25,39 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
     
-    // 我们在此不进行任何账号硬编码，将来直接换成：
-    // const res = await http.post('/auth/login', { account, password_hash });
-    setTimeout(() => {
-      // 在这里仅模拟后端颁发了 token
-      document.cookie = `mock_token=fake_jwt_token; path=/; max-age=86400`;
+    try {
+      // 对接真实后端 API 获取 token
+      // 修复高风险问题：直接接收 request.ts 脱壳后的 data 对象
+      const data = await http<{ token: string; user: any }>('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: account, password_hash: password }), 
+      });
 
-      if (redirectParams) {
-        router.push(redirectParams);
+      if (data?.token) {
+        const { token } = data;
+        // 同步 Token 状态以防万一：
+        // 1. 本地存储，供 request.ts 后续调用拦截拿取
+        localStorage.setItem('access_token', token);
+        // 2. Cookie，供服务端组件 (ssr) 和 middleware 取用
+        document.cookie = `access_token=${token}; path=/; max-age=86400`;
+
+        if (redirectParams) {
+          router.push(redirectParams);
+        } else {
+          router.push('/');
+        }
+        
+        router.refresh(); 
       } else {
-        router.push('/');
+        setErrorMsg('登录失败，未能获取鉴权凭证');
       }
-      
-      router.refresh(); 
-    }, 800);
+    } catch (err: any) {
+      // http 方法内部抛出的是携带 message 的 Error 对象
+      setErrorMsg(err.message || '服务器连接异常，请稍后再试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

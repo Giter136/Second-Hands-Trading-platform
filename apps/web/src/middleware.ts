@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // 只判断是否存在基础 token（代表登录状态）。不在这里做角色判断。
-  const token = request.cookies.get('mock_token')?.value;
+  const token = request.cookies.get('access_token')?.value;
 
   const { pathname } = request.nextUrl;
 

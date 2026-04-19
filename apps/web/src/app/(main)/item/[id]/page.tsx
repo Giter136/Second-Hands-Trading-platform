@@ -1,6 +1,9 @@
 import React from 'react';
 
-export default function ItemDetail({ params }: { params: { id: string } }) {
+// 修复点：Next.js 15 的动态路由 params 和 searchParams 是异步的 Promise
+export default async function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   return (
     <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-8 animate-fade-up delay-100">
       

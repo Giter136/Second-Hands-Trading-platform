@@ -10,22 +10,28 @@ export default async function AdminLayout({
 }) {
   // 1. 提取当前附带的 Token（由中间件保证这里肯定有Token，但未鉴定角色）
   const cookieStore = await cookies();
-  const token = cookieStore.get('mock_token')?.value;
-  // 这是一个残留的测试值，用于暂时模拟后端数据库返回的鉴定结果
-  const simulatedBackendResult = cookieStore.get('mock_role')?.value;
+  const token = cookieStore.get('access_token')?.value;
 
-  // 2. 【核心修复】：在这里向后端发起身份鉴定请求！
-  // 实际接入后端后的代码将是：
-  // const res = await fetch('http://localhost:8000/api/v1/auth/me', {
-  //   headers: { Authorization: `Bearer ${token}` }
-  // });
-  // const user = await res.json();
-  // if (user.role !== 1) { redirect('/'); }
+  // 2. 【核心修复】：在这里向真实后端发起身份鉴定请求！
+  try {
+    const res = await fetch('http://localhost:8000/api/v1/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store' // 保证每次都拿取真实鉴权，防止状态缓存
+    });
+    
+    if (!res.ok) {
+      // 无权限或Token失效或服务端错误，踢回前台
+      redirect('/');
+    }
 
-  // 模拟等待后端处理及返回的结果：如果后端说该账号不是管理员
-  if (simulatedBackendResult !== 'admin') {
-    // 服务端直接掐断，强行把用户丢回前台！
-    // 浏览器根本连管理员界面的 HTML 骨架都不会收到，做到真正的无感知。
+    const { data: user } = await res.json();
+    
+    // 如果后台确凿说账号不是管理员（role不为1）
+    if (user?.role !== 1) {
+      redirect('/');
+    }
+  } catch (error) {
+    // 遇到断网或者后端未启动情况时，不予通过（安全第一）
     redirect('/');
   }
 
