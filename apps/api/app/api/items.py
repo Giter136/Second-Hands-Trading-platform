@@ -44,7 +44,7 @@ async def publish_item(
 ):
     service = ItemService(ItemRepository(session))
     item = await service.publish_item(current_user=current_user, payload=payload)
-    return success_response(data=item.model_dump(by_alias=True))
+    return success_response(data=item.model_dump(by_alias=True), message="上传成功！等待管理员审核。")
 
 
 @router.patch("/{item_id}/status")

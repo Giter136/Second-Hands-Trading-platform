@@ -11,6 +11,22 @@ from app.core.response import error_response
 logger = logging.getLogger(__name__)
 
 
+def _safe_validation_errors(exc: RequestValidationError) -> list[dict]:
+    safe_errors: list[dict] = []
+    for error in exc.errors():
+        if not isinstance(error, dict):
+            continue
+
+        ctx = error.get("ctx")
+        if isinstance(ctx, dict) and isinstance(ctx.get("error"), Exception):
+            ctx = {**ctx, "error": str(ctx["error"])}
+            error = {**error, "ctx": ctx}
+
+        safe_errors.append(error)
+
+    return safe_errors
+
+
 def register_exception_handlers(app) -> None:
     @app.exception_handler(AppException)
     async def handle_app_exception(_: Request, exc: AppException) -> JSONResponse:
@@ -26,7 +42,7 @@ def register_exception_handlers(app) -> None:
             content=error_response(
                 code=error_codes.INVALID_PARAMS,
                 message="invalid params",
-                data=exc.errors(),
+                data=_safe_validation_errors(exc),
             ),
         )
 

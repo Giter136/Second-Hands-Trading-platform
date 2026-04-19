@@ -2,23 +2,37 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { http } from '../../../utils/request';
+import { authService } from '../../../services/auth.service';
+
+type AuthMode = 'login' | 'register';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return '服务器连接异常，请稍后再试';
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParams = searchParams.get('redirect');
 
+  const [mode, setMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // 严正声明：登录逻辑已对接真实后端
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!account || !password) {
       setErrorMsg('请输入账号和密码');
+      return;
+    }
+    if (mode === 'register' && !nickname.trim()) {
+      setErrorMsg('请输入昵称');
       return;
     }
 
@@ -26,35 +40,36 @@ export default function LoginPage() {
     setErrorMsg('');
     
     try {
-      // 对接真实后端 API 获取 token
-      // 修复高风险问题：直接接收 request.ts 脱壳后的 data 对象
-      const data = await http<{ token: string; user: any }>('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: account, password_hash: password }), 
-      });
+      if (mode === 'register') {
+        await authService.register(account, password, nickname.trim());
+      }
 
-      if (data?.token) {
-        const { token } = data;
-        // 同步 Token 状态以防万一：
-        // 1. 本地存储，供 request.ts 后续调用拦截拿取
-        localStorage.setItem('access_token', token);
-        // 2. Cookie，供服务端组件 (ssr) 和 middleware 取用
-        document.cookie = `access_token=${token}; path=/; max-age=86400`;
+      const data = await authService.login(account, password);
+      localStorage.setItem('access_token', data.token);
+      document.cookie = `access_token=${data.token}; path=/; max-age=86400`;
 
+      // 针对管理员权限（role === 1）分配专线跳转机制
+      if (data.user.role === 1) {
+        // 如果是从非 /admin 的其他地方重定向来的，通常管理员更期望回管理后台
+        // 但如果明确有特殊 redirect 可以考虑放行。为了彻底解决无法进后台：一律先切去 /admin
+        // 除非参数明确要回前台某个页，或者就干脆优先 /admin
+        if (redirectParams && !redirectParams.startsWith('/admin')) {
+          router.push(redirectParams);
+        } else {
+          router.push('/admin');
+        }
+      } else {
+        // 普通用户跳转逻辑
         if (redirectParams) {
           router.push(redirectParams);
         } else {
           router.push('/');
         }
-        
-        router.refresh(); 
-      } else {
-        setErrorMsg('登录失败，未能获取鉴权凭证');
       }
-    } catch (err: any) {
-      // http 方法内部抛出的是携带 message 的 Error 对象
-      setErrorMsg(err.message || '服务器连接异常，请稍后再试');
+
+      router.refresh();
+    } catch (err: unknown) {
+      setErrorMsg(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -67,11 +82,47 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#4361EE]/20 to-transparent rounded-bl-full pointer-events-none" />
         
         <div className="mb-10 text-center relative z-10">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-3">登录云端</h1>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-3">
+            {mode === 'login' ? '登录云端' : '创建账号'}
+          </h1>
           <p className="text-slate-500 font-medium text-sm">欢迎开启你的极简交易之旅</p>
+
+          <div className="mt-5 inline-flex rounded-full bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
+                mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              登录
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('register')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
+                mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              注册
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5 relative z-10 w-full">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10 w-full">
+          {mode === 'register' && (
+            <div className="w-full">
+              <label className="block text-xs font-bold text-slate-500 mb-2">昵称</label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="输入昵称"
+                className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#4361EE]/50 transition-all font-medium placeholder:text-slate-400 outline-none"
+              />
+            </div>
+          )}
+
           <div className="w-full">
             <label className="block text-xs font-bold text-slate-500 mb-2">手机号/账号</label>
             <input 
@@ -103,7 +154,7 @@ export default function LoginPage() {
             disabled={loading}
             className="group relative w-full flex justify-center py-4 px-6 mt-2 border border-transparent text-sm font-bold rounded-2xl text-white bg-slate-900 hover:bg-[#4361EE] focus:outline-none transition-all shadow-lg hover:shadow-[0_8px_20px_rgba(67,97,238,0.3)] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
           >
-            {loading ? '正在通信...' : '立即登录 / 注册'}
+            {loading ? '正在通信...' : mode === 'login' ? '立即登录' : '注册并登录'}
           </button>
         </form>
 

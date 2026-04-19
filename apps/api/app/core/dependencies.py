@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.core.exceptions import ForbiddenException, UnauthorizedException
 from app.core.security import decode_access_token
+from app.repositories.revoked_token_repository import RevokedTokenRepository
 from app.repositories.user_repository import UserRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -14,6 +15,10 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_session),
 ):
+    revoked_token_repository = RevokedTokenRepository(session)
+    if await revoked_token_repository.is_revoked(token):
+        raise UnauthorizedException("token invalid")
+
     payload = decode_access_token(token)
     subject = payload.get("sub")
     if subject is None:

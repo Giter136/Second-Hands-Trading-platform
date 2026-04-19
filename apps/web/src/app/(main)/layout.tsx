@@ -34,11 +34,11 @@ export default async function MainLayout({
                   登录
                 </Link>
               ) : (
-                <span className="text-sm font-bold text-slate-800 dropdown cursor-pointer">
+                <Link href="/profile" className="text-sm font-bold text-slate-800 hover:text-[#4361EE] cursor-pointer px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors">
                   用户中心
-                </span>
+                </Link>
               )}
-              <Link href="/publish" className="text-sm font-medium bg-slate-900 text-white px-5 py-2 rounded-full hover:bg-[#4361EE] transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 inline-block text-center">
+              <Link href="/publish" className="text-sm font-medium bg-slate-900 text-white px-5 py-2 rounded-full hover:bg-[#4361EE] transition-all flex items-center justify-center">
                 发布闲置
               </Link>
             </div>
